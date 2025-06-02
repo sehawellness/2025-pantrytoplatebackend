@@ -4,6 +4,7 @@ import json
 import re
 import logging
 import certifi
+import ssl
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
@@ -24,8 +25,7 @@ class RecipeService:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
-            "Content-Type": "application/json",
-            "Host": "openrouter.ai"
+            "Content-Type": "application/json"
         }
         
         payload = {
@@ -50,7 +50,12 @@ class RecipeService:
             logger.info(f"Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'})}")
             logger.info(f"Payload: {json.dumps(payload)}")
             
-            async with httpx.AsyncClient(timeout=30.0, verify=certifi.where()) as client:
+            # Create a custom SSL context that doesn't verify certificates
+            ssl_context = ssl.create_default_context()
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+            
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
                 try:
                     response = await client.post(
                         self.api_url,
