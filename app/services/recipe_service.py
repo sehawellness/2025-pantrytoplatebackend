@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://api.openrouter.ai/api/v1/chat/completions"
+        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
