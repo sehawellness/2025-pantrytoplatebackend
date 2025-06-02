@@ -2,7 +2,10 @@ import os
 import httpx
 import json
 import re
+import logging
 from typing import List, Dict
+
+logger = logging.getLogger(__name__)
 
 class RecipeService:
     def __init__(self):
@@ -11,15 +14,18 @@ class RecipeService:
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
+            logger.error("OpenRouter API key not found in environment variables")
             raise Exception("OpenRouter API key not found in environment variables")
             
         prompt = self._create_prompt(ingredients, dietary_restrictions)
+        logger.info(f"Created prompt for ingredients: {ingredients}")
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
             "X-Title": "PantryToPlate API",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Accept": "application/json"
         }
         
         payload = {
@@ -39,6 +45,7 @@ class RecipeService:
         }
         
         try:
+            logger.info(f"Making request to OpenRouter API at {self.api_url}")
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     self.api_url,
@@ -46,13 +53,24 @@ class RecipeService:
                     json=payload
                 )
                 
+                logger.info(f"Received response with status code: {response.status_code}")
+                
                 if response.status_code == 200:
                     result = response.json()
+                    logger.info("Successfully received response from OpenRouter API")
                     return self._parse_response(result['choices'][0]['message']['content'])
                 else:
                     error_detail = response.json() if response.content else response.text
+                    logger.error(f"API call failed with status {response.status_code}: {error_detail}")
                     raise Exception(f"API call failed with status {response.status_code}: {error_detail}")
+        except httpx.TimeoutException:
+            logger.error("Request to OpenRouter API timed out")
+            raise Exception("Request to OpenRouter API timed out")
+        except httpx.RequestError as e:
+            logger.error(f"Network error when calling OpenRouter API: {str(e)}")
+            raise Exception(f"Network error when calling OpenRouter API: {str(e)}")
         except Exception as e:
+            logger.error(f"Unexpected error calling OpenRouter API: {str(e)}")
             raise Exception(f"Error calling OpenRouter API: {str(e)}")
     
     def _create_prompt(self, ingredients: List[str], dietary_restrictions: List[str]) -> str:
@@ -70,19 +88,26 @@ class RecipeService:
     def _parse_response(self, content: str) -> Dict:
         try:
             # First, try to parse as-is
+            logger.info("Attempting to parse API response as JSON")
             return json.loads(content)
         except json.JSONDecodeError:
             try:
+                logger.info("Initial JSON parsing failed, trying to extract JSON from response")
                 # Try to extract JSON from markdown code blocks
                 json_match = re.search(r'```(?:json)?\n(.*?)\n```', content, re.DOTALL)
                 if json_match:
+                    logger.info("Found JSON in code block")
                     return json.loads(json_match.group(1))
                 
                 # If no code blocks, try to find just the JSON object
                 json_match = re.search(r'({.*})', content, re.DOTALL)
                 if json_match:
+                    logger.info("Found JSON object in content")
                     return json.loads(json_match.group(1))
                 
+                logger.error("Could not find valid JSON in response")
                 raise Exception("Could not find valid JSON in response")
             except Exception as e:
+                logger.error(f"Failed to parse API response: {str(e)}")
+                logger.error(f"Raw content: {content}")
                 raise Exception(f"Failed to parse API response: {str(e)}, Content: {content}") 
