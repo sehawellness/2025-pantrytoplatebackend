@@ -30,10 +30,16 @@ class RecipeService:
             "model": "gpt-3.5-turbo",
             "messages": [
                 {
+                    "role": "system",
+                    "content": "You are a helpful cooking assistant that creates recipes and meal plans. Always respond with valid JSON."
+                },
+                {
                     "role": "user",
-                    "content": "Return a simple test JSON response"
+                    "content": prompt
                 }
-            ]
+            ],
+            "temperature": 0.7,
+            "max_tokens": 2000
         }
         
         try:
@@ -65,12 +71,24 @@ class RecipeService:
                         try:
                             result = response.json()
                             logger.info(f"Parsed response JSON: {json.dumps(result)}")
-                            # For now, return a test response
-                            return {
-                                "recipes": [{"name": "Test Recipe"}],
-                                "meal_plan": {"test": "plan"},
-                                "grocery_list": ["test item"]
-                            }
+                            
+                            # Extract the content from the API response
+                            content = result['choices'][0]['message']['content']
+                            logger.info(f"Extracted content: {content}")
+                            
+                            # Parse the content as JSON
+                            try:
+                                recipes_data = json.loads(content)
+                                logger.info(f"Successfully parsed recipe data: {json.dumps(recipes_data)}")
+                                return recipes_data
+                            except json.JSONDecodeError as e:
+                                logger.error(f"Failed to parse recipe content as JSON: {str(e)}")
+                                # Try to extract JSON from the content if it's wrapped in markdown
+                                json_match = re.search(r'```json\s*(.*?)\s*```', content, re.DOTALL)
+                                if json_match:
+                                    return json.loads(json_match.group(1))
+                                raise Exception(f"Failed to parse recipe data as JSON")
+                                
                         except json.JSONDecodeError as e:
                             logger.error(f"Failed to parse successful response as JSON: {str(e)}")
                             logger.error(f"Response content: {response_text}")
@@ -103,9 +121,27 @@ class RecipeService:
         2. A weekly meal plan
         3. A grocery shopping list
         
-        Respond with ONLY a JSON object containing these keys: 'recipes', 'meal_plan', 'grocery_list'.
-        Do not include any markdown formatting or code blocks in your response.
-        The response should be a valid JSON object that can be parsed directly."""
+        Respond with ONLY a JSON object containing these keys:
+        - recipes: array of objects, each with 'name' and 'instructions'
+        - meal_plan: object with days of the week as keys
+        - grocery_list: array of strings
+        
+        Example format:
+        {{
+            "recipes": [
+                {{
+                    "name": "Recipe Name",
+                    "instructions": "Step by step instructions"
+                }}
+            ],
+            "meal_plan": {{
+                "Monday": "Recipe Name",
+                "Tuesday": "Another Recipe"
+            }},
+            "grocery_list": ["item 1", "item 2"]
+        }}
+        
+        Ensure the response is a valid JSON object without any markdown formatting or code blocks."""
     
     def _parse_response(self, content: str) -> Dict:
         try:
