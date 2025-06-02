@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://openrouter.xyz/api/v1/chat/completions"
+        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
@@ -24,24 +24,26 @@ class RecipeService:
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
             "X-Title": "PantryToPlate API",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
+            "OpenAI-Organization": "pantrytoplate-org",
+            "Content-Type": "application/json"
         }
         
         payload = {
-            "model": "openai/gpt-3.5-turbo",
+            "model": "gpt-3.5-turbo",
             "messages": [
                 {
                     "role": "user",
-                    "content": "Return a simple JSON response with a test message"
+                    "content": "Return a simple test JSON response"
                 }
-            ],
-            "temperature": 0.7,
-            "max_tokens": 100
+            ]
         }
         
         try:
-            logger.info(f"Making request to OpenRouter API at {self.api_url}")
+            logger.info(f"Making request to OpenRouter API")
+            logger.info(f"URL: {self.api_url}")
+            logger.info(f"Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'})}")
+            logger.info(f"Payload: {json.dumps(payload)}")
+            
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
                     self.api_url,
@@ -50,22 +52,30 @@ class RecipeService:
                     follow_redirects=True
                 )
                 
-                logger.info(f"Received response with status code: {response.status_code}")
-                logger.info(f"Response headers: {response.headers}")
-                logger.info(f"Response content: {response.text}")
+                logger.info(f"Response status code: {response.status_code}")
+                logger.info(f"Response headers: {dict(response.headers)}")
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    logger.info("Successfully received response from OpenRouter API")
-                    return {
-                        "recipes": [{"name": "Test Recipe"}],
-                        "meal_plan": {"test": "plan"},
-                        "grocery_list": ["test item"]
-                    }
-                else:
-                    error_detail = response.json() if response.content else response.text
-                    logger.error(f"API call failed with status {response.status_code}: {error_detail}")
-                    raise Exception(f"API call failed with status {response.status_code}: {error_detail}")
+                try:
+                    response_text = response.text
+                    logger.info(f"Raw response text: {response_text}")
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        logger.info(f"Parsed response JSON: {json.dumps(result)}")
+                        return {
+                            "recipes": [{"name": "Test Recipe"}],
+                            "meal_plan": {"test": "plan"},
+                            "grocery_list": ["test item"]
+                        }
+                    else:
+                        error_detail = response.json() if response.content else response.text
+                        logger.error(f"API call failed with status {response.status_code}: {error_detail}")
+                        raise Exception(f"API call failed with status {response.status_code}: {error_detail}")
+                except json.JSONDecodeError as e:
+                    logger.error(f"Failed to decode response as JSON: {str(e)}")
+                    logger.error(f"Response content: {response.text}")
+                    raise Exception(f"Invalid JSON response from API: {str(e)}")
+                
         except httpx.TimeoutException:
             logger.error("Request to OpenRouter API timed out")
             raise Exception("Request to OpenRouter API timed out")
