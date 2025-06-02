@@ -4,7 +4,11 @@ python-dotenv==1.0.0
 httpx==0.25.1
 pydantic==2.4.2
 python-multipart==0.0.6
-supabase==2.3.0
-python-jose[cryptography]
-passlib[bcrypt]
-certifi==2023.11.17 
+supabase==1.0.3
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+certifi==2023.11.17
+cryptography==41.0.5
+postgrest==0.10.8
+gotrue==1.1.0
+realtime==1.0.0 
