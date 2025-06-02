@@ -3,6 +3,7 @@ import httpx
 import json
 import re
 import logging
+import certifi
 from typing import List, Dict
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ logger = logging.getLogger(__name__)
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://104.22.48.189/api/v1/chat/completions"
+        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
@@ -49,7 +50,7 @@ class RecipeService:
             logger.info(f"Headers: {json.dumps({k: v for k, v in headers.items() if k != 'Authorization'})}")
             logger.info(f"Payload: {json.dumps(payload)}")
             
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=30.0, verify=certifi.where()) as client:
                 try:
                     response = await client.post(
                         self.api_url,

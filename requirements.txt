@@ -6,4 +6,5 @@ pydantic==2.4.2
 python-multipart==0.0.6
 supabase==2.3.0
 python-jose[cryptography]
-passlib[bcrypt] 
+passlib[bcrypt]
+certifi==2023.11.17 
