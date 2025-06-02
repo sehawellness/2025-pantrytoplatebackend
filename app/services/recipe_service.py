@@ -13,7 +13,7 @@ class RecipeService:
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "HTTP-Referer": "https://your-app-domain.com",  # Replace with your Render domain
+            "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
             "Content-Type": "application/json"
         }
         
