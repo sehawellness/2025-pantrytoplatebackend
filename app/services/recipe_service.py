@@ -1,6 +1,7 @@
 import os
 import httpx
 import json
+import re
 from typing import List, Dict
 
 class RecipeService:
@@ -26,7 +27,7 @@ class RecipeService:
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a helpful cooking assistant that creates recipes and meal plans."
+                    "content": "You are a helpful cooking assistant that creates recipes and meal plans. Always respond with valid JSON without any markdown formatting or code blocks."
                 },
                 {
                     "role": "user",
@@ -65,12 +66,27 @@ class RecipeService:
         1. 3 possible recipes that can be made
         2. A weekly meal plan
         3. A grocery shopping list
-        Format the response as a JSON with keys: 'recipes', 'meal_plan', 'grocery_list'"""
+        
+        Respond with ONLY a JSON object containing these keys: 'recipes', 'meal_plan', 'grocery_list'.
+        Do not include any markdown formatting or code blocks in your response.
+        The response should be a valid JSON object that can be parsed directly."""
     
     def _parse_response(self, content: str) -> Dict:
         try:
+            # First, try to parse as-is
             return json.loads(content)
-        except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse API response as JSON: {str(e)}, Content: {content}")
-        except Exception as e:
-            raise Exception(f"Unexpected error parsing response: {str(e)}") 
+        except json.JSONDecodeError:
+            try:
+                # Try to extract JSON from markdown code blocks
+                json_match = re.search(r'```(?:json)?\n(.*?)\n```', content, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group(1))
+                
+                # If no code blocks, try to find just the JSON object
+                json_match = re.search(r'({.*})', content, re.DOTALL)
+                if json_match:
+                    return json.loads(json_match.group(1))
+                
+                raise Exception("Could not find valid JSON in response")
+            except Exception as e:
+                raise Exception(f"Failed to parse API response: {str(e)}, Content: {content}") 
