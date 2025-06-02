@@ -6,32 +6,48 @@ from typing import List, Dict
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.api_url = "https://api.openrouter.ai/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
-        prompt = self._create_prompt(ingredients, dietary_restrictions)
-        
         if not self.api_key:
             raise Exception("OpenRouter API key not found in environment variables")
+            
+        prompt = self._create_prompt(ingredients, dietary_restrictions)
         
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
+            "X-Title": "PantryToPlate API",
             "Content-Type": "application/json"
         }
         
         payload = {
-            "model": "mistralai/devstral-small:free",
-            "messages": [{"role": "user", "content": prompt}]
+            "model": "mistralai/mistral-7b-instruct",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful cooking assistant that creates recipes and meal plans."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
         }
         
         try:
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                print(f"Making request to OpenRouter API with URL: {self.api_url}")
                 response = await client.post(
                     self.api_url,
                     headers=headers,
                     json=payload
                 )
+                
+                print(f"Response status: {response.status_code}")
+                print(f"Response content: {response.text}")
                 
                 if response.status_code == 200:
                     result = response.json()
