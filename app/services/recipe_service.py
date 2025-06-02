@@ -29,19 +29,15 @@ class RecipeService:
         }
         
         payload = {
-            "model": "mistralai/mistral-7b-instruct",
+            "model": "openai/gpt-3.5-turbo",
             "messages": [
                 {
-                    "role": "system",
-                    "content": "You are a helpful cooking assistant that creates recipes and meal plans. Always respond with valid JSON without any markdown formatting or code blocks."
-                },
-                {
                     "role": "user",
-                    "content": prompt
+                    "content": "Return a simple JSON response with a test message"
                 }
             ],
             "temperature": 0.7,
-            "max_tokens": 1000
+            "max_tokens": 100
         }
         
         try:
@@ -50,15 +46,22 @@ class RecipeService:
                 response = await client.post(
                     self.api_url,
                     headers=headers,
-                    json=payload
+                    json=payload,
+                    follow_redirects=True
                 )
                 
                 logger.info(f"Received response with status code: {response.status_code}")
+                logger.info(f"Response headers: {response.headers}")
+                logger.info(f"Response content: {response.text}")
                 
                 if response.status_code == 200:
                     result = response.json()
                     logger.info("Successfully received response from OpenRouter API")
-                    return self._parse_response(result['choices'][0]['message']['content'])
+                    return {
+                        "recipes": [{"name": "Test Recipe"}],
+                        "meal_plan": {"test": "plan"},
+                        "grocery_list": ["test item"]
+                    }
                 else:
                     error_detail = response.json() if response.content else response.text
                     logger.error(f"API call failed with status {response.status_code}: {error_detail}")
