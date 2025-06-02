@@ -9,6 +9,6 @@ python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 certifi==2023.11.17
 cryptography==41.0.5
-postgrest==0.10.8
+postgrest==0.10.4
 gotrue==1.1.0
 realtime==1.0.0 
