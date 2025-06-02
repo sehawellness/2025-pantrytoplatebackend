@@ -7,7 +7,7 @@ from typing import List, Dict
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.api_url = "https://openrouter.xyz/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
@@ -40,15 +40,11 @@ class RecipeService:
         
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                print(f"Making request to OpenRouter API with URL: {self.api_url}")
                 response = await client.post(
                     self.api_url,
                     headers=headers,
                     json=payload
                 )
-                
-                print(f"Response status: {response.status_code}")
-                print(f"Response content: {response.text}")
                 
                 if response.status_code == 200:
                     result = response.json()
