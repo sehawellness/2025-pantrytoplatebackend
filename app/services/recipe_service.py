@@ -11,6 +11,9 @@ class RecipeService:
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         prompt = self._create_prompt(ingredients, dietary_restrictions)
         
+        if not self.api_key:
+            raise Exception("OpenRouter API key not found in environment variables")
+        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
@@ -22,18 +25,22 @@ class RecipeService:
             "messages": [{"role": "user", "content": prompt}]
         }
         
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                self.api_url,
-                headers=headers,
-                json=payload
-            )
-            
-            if response.status_code == 200:
-                result = response.json()
-                return self._parse_response(result['choices'][0]['message']['content'])
-            else:
-                raise Exception(f"API call failed: {response.text}")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.api_url,
+                    headers=headers,
+                    json=payload
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return self._parse_response(result['choices'][0]['message']['content'])
+                else:
+                    error_detail = response.json() if response.content else response.text
+                    raise Exception(f"API call failed with status {response.status_code}: {error_detail}")
+        except Exception as e:
+            raise Exception(f"Error calling OpenRouter API: {str(e)}")
     
     def _create_prompt(self, ingredients: List[str], dietary_restrictions: List[str]) -> str:
         return f"""Given these ingredients: {', '.join(ingredients)}
@@ -47,10 +54,7 @@ class RecipeService:
     def _parse_response(self, content: str) -> Dict:
         try:
             return json.loads(content)
-        except:
-            # Fallback in case the LLM doesn't return valid JSON
-            return {
-                "recipes": [],
-                "meal_plan": {},
-                "grocery_list": []
-            } 
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to parse API response as JSON: {str(e)}, Content: {content}")
+        except Exception as e:
+            raise Exception(f"Unexpected error parsing response: {str(e)}") 
