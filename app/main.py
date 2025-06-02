@@ -100,4 +100,35 @@ async def debug_env():
         "supabase_key_exists": "SUPABASE_KEY" in os.environ,
         "python_version": sys.version,
         "env_vars_available": list(os.environ.keys())
-    } 
+    }
+
+@app.get("/test-supabase/{user_id}")
+async def test_supabase(user_id: str):
+    """Test endpoint to verify Supabase integration"""
+    try:
+        # Try to save a test recipe
+        test_data = {
+            "ingredients": ["test"],
+            "dietary_restrictions": ["test"],
+            "recipes": [{"name": "Test Recipe", "instructions": "Test Instructions"}],
+            "meal_plan": {"Monday": "Test Recipe"},
+            "grocery_list": ["test ingredient"]
+        }
+        
+        # Save to history
+        history_result = await supabase_service.save_recipe_history(user_id, test_data)
+        logger.info(f"Saved test recipe to history: {history_result}")
+        
+        # Get history
+        history = await supabase_service.get_recipe_history(user_id)
+        logger.info(f"Retrieved recipe history: {history}")
+        
+        return {
+            "status": "success",
+            "saved_recipe": history_result,
+            "history": history
+        }
+    except Exception as e:
+        logger.error(f"Error testing Supabase: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e)) 
