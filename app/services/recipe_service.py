@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class RecipeService:
     def __init__(self):
         self.api_key = os.getenv("OPENROUTER_API_KEY")
-        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.api_url = "https://104.22.48.189/api/v1/chat/completions"
         
     async def generate_recipes(self, ingredients: List[str], dietary_restrictions: List[str]) -> Dict:
         if not self.api_key:
@@ -23,7 +23,8 @@ class RecipeService:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "HTTP-Referer": "https://pantrytoplate-api.onrender.com",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Host": "openrouter.ai"
         }
         
         payload = {
