@@ -124,11 +124,15 @@ async def health_check():
 @app.get("/debug-env")
 async def debug_env():
     """Debug endpoint to check environment variables (without exposing sensitive data)"""
+    supabase_url = os.getenv("SUPABASE_URL", "")
+    supabase_key = os.getenv("SUPABASE_KEY", "")
     return {
         "api_key_exists": "OPENROUTER_API_KEY" in os.environ,
         "api_key_length": len(os.getenv("OPENROUTER_API_KEY", "")) if "OPENROUTER_API_KEY" in os.environ else 0,
-        "supabase_url_exists": "SUPABASE_URL" in os.environ,
-        "supabase_key_exists": "SUPABASE_KEY" in os.environ,
+        "supabase_url_exists": bool(supabase_url),
+        "supabase_url": supabase_url if supabase_url else "Not set",
+        "supabase_key_exists": bool(supabase_key),
+        "supabase_key_length": len(supabase_key) if supabase_key else 0,
         "python_version": sys.version,
         "env_vars_available": list(os.environ.keys())
     } 
