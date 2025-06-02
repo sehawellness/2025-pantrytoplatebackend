@@ -8,16 +8,14 @@ logger = logging.getLogger(__name__)
 
 class SupabaseService:
     def __init__(self):
-        self.supabase_url = os.getenv("SUPABASE_URL")
-        self.supabase_key = os.getenv("SUPABASE_KEY")
+        # Temporary hardcoded values for testing
+        self.supabase_url = "https://jycfwicekxqhrrkjkxpl.supabase.co"
+        self.supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5Y2Z3aWNla3hxaHJya2preHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4ODU5OTgsImV4cCI6MjA2NDQ2MTk5OH0.JAlEgPHUA269ICaH-IgqbZRUhRrVTv4GmqEWMI03ics"
         
         logger.info(f"Initializing Supabase client with URL: {self.supabase_url}")
         logger.info(f"API key exists: {bool(self.supabase_key)}")
         logger.info(f"API key length: {len(self.supabase_key) if self.supabase_key else 0}")
         
-        if not self.supabase_url or not self.supabase_key:
-            raise Exception("Supabase credentials not found in environment variables")
-            
         try:
             self.client: Client = create_client(self.supabase_url, self.supabase_key)
             logger.info("Successfully created Supabase client")
