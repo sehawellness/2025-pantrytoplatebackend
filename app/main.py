@@ -135,4 +135,33 @@ async def debug_env():
         "supabase_key_length": len(supabase_key) if supabase_key else 0,
         "python_version": sys.version,
         "env_vars_available": list(os.environ.keys())
-    } 
+    }
+
+@app.get("/test-db/{user_id}")
+async def test_db(user_id: str):
+    """Simple test endpoint for database operations"""
+    try:
+        # Try to save a simple test record
+        test_data = {
+            "ingredients": ["test"],
+            "dietary_restrictions": ["test"],
+            "recipes": [{"name": "Simple Test", "instructions": "Test"}],
+            "meal_plan": {"Monday": "Test"},
+            "grocery_list": ["test"]
+        }
+        
+        logger.info("Testing Supabase connection...")
+        logger.info(f"User ID: {user_id}")
+        logger.info(f"Test data: {test_data}")
+        
+        # Save to history
+        result = await supabase_service.save_recipe_history(user_id, test_data)
+        
+        return {
+            "status": "success",
+            "data": result
+        }
+    except Exception as e:
+        logger.error(f"Database test error: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e)) 
